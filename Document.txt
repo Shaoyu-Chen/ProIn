@@ -1,0 +1,6 @@
+1. MSP only used for exception.
+2. Kernel invoked by SVC should not use system call interface, or that will cause SVC 
+   to invoke a SVC then get a fault.
+
+Author:
+Shaoyu Chen
