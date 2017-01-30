@@ -7,14 +7,15 @@
 #define STK_FR_SIZE	8
 #define THD_STK		128
 
-#define PRIO_LEVEL	256
+// Priority of thread: 0 ~ 7, the loewr the number, the higher the priority
+#define PRIO_LEVEL	8
 
 typedef struct __TCB_T__
 {
 	uint32_t tid;
 
 	struct {
-		uint32_t prio : 8;
+		uint32_t prio : 4;
 		uint32_t slices : 8;
 		uint32_t runable : 4;
 	} status;
@@ -30,6 +31,7 @@ typedef struct __TCB_T__
 typedef struct __TCB_LIST_T__
 {
 	uint32_t num_of_thd;
+	uint32_t slices_sum;
 	tcb **head;
 } tcb_list_t;
 

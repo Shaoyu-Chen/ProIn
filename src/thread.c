@@ -29,15 +29,36 @@ int32_t __thread_create(void *func, uint32_t *args, uint8_t prio)
 		
 		if(!newborn) return -1;
 
+		
+		// TCB initialization
 		newborn->tid = tcb_list.num_of_thd + 1;
+
+		if(prio >= PRIO_LEVEL)
+			prio = PRIO_LEVEL - 1;
 		newborn->status.prio = prio;
-		newborn->status.slices = PRIO_LEVEL - prio;
+		tcb_list.slices_sum += PRIO_LEVEL - prio;
+		newborn->status.slices = (PRIO_LEVEL - prio) * SYSTICK_RATE / tcb_list.slices_sum;
+
+
+		if(tcb_list.num_of_thd > 0)
+		{
+			tcb *probe = *tcb_list.head;
+
+			do{
+				if(newborn->status.prio <= probe->status.prio && newborn->status.slices > probe->status.slices)
+					newborn->status.slices = probe->status.slices;
+			
+				probe = probe->next;
+			} while(probe != *tcb_list.head);
+		}
+
 		newborn->status.runable = 1;
 
 		newborn->sp = newborn->stack + THD_STK;
 		newborn->sp -= STK_FR_SIZE;
 
-		if(args)
+		// Context initialization
+		if(args)				// argc, argv
 		{
 			newborn->sp[R0] = args[0];
 			newborn->sp[R1] = args[1];
@@ -49,13 +70,12 @@ int32_t __thread_create(void *func, uint32_t *args, uint8_t prio)
 		}
 
 		newborn->sp[PC] = (uint32_t) func;
+		newborn->sp[xPSR] = (1 << 24);		// Always in Thumb state
 
-		// Always in Thumb state
-		newborn->sp[xPSR] = (1 << 24);
-
-		tcb_list.num_of_thd += 1;
 
 		// Inserts into tcb_list
+		tcb_list.num_of_thd += 1;
+
 		if(tcb_list.head)
 		{
 			newborn->next = *tcb_list.head;
@@ -97,7 +117,9 @@ void scheduler()
 		// If all threads reach 0 slices, RELOAD
 		do
 		{
-			probe->status.slices = PRIO_LEVEL - probe->status.prio;
+			probe->status.slices = (PRIO_LEVEL - probe->status.prio) * SYSTICK_RATE / tcb_list.slices_sum;
+			(probe->status.slices == 0) ? (probe->status.slices = 1) : 0;
+			
 			(probe->status.slices > max_slices) ? current_thd = probe : 0;
 			probe = probe->next;
 

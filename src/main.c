@@ -5,13 +5,6 @@
 #include "lock.h"
 #include "heap.h"
 
-// Default PRIGROUP, 4-bit priority width implemented
-#define PRI_HIGHEST	0
-#define PRI_HIGH	1 << 4
-#define PRI_MEDIUM	2 << 4
-#define PRI_LOW		3 << 4
-#define PRI_LOWEST	4 << 4
-
 struct __RCC_CLK__ RCC_CLK;
 
 uint8_t AHB_prescaler[] = {0, 0, 0, 0, 0, 0, 0, 0, 1, 2, 3, 4, 6, 7, 8, 9};
@@ -44,16 +37,16 @@ void thread_4(uint32_t argc, void *argv)
 int main()
 {
 	// Sets exception priorities (default PRIGROUP)
-	SCB_SHP[7] = PRI_LOW;		// SVC
-	SCB_SHP[10] = PRI_LOWEST;	// PendSV
-	SCB_SHP[11] = PRI_MEDIUM;	// SysTick
+	SCB_SHP[7] = PRIO_LOW;		// SVC
+	SCB_SHP[10] = PRIO_LOWEST;	// PendSV
+	SCB_SHP[11] = PRIO_MEDIUM;	// SysTick
 
 	LED_Init();
 	USART3_Init();
 	HEAP_Init();
 
-	if(thread_create(thread_1, NULL, 10) || thread_create(thread_2, NULL, 10) ||
-		thread_create(thread_3, NULL, 5) || thread_create(thread_4, NULL, 5))
+	if(thread_create(thread_1, NULL, 3) || thread_create(thread_2, NULL, 3) ||
+		thread_create(thread_3, NULL, 3) || thread_create(thread_4, NULL, 3))
 	{
 		print("Thread create failed.\n");
 		while(1);

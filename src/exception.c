@@ -134,6 +134,7 @@ void __attribute__((naked)) PendSV_Handler()
 	__asm__ volatile("MOV   R2, %0          \n\t" :: "r" (current_thd->sp) : "r2");
 	__asm__ volatile("MSR   PSP, R2         \n\t");
 
+	// Return to Thread Mode with PSP as sp
 	__asm__ volatile("MOV   LR, #0xFFFFFFFD \n\t");
 	__asm__ volatile("BX	LR		\n\t");
 }

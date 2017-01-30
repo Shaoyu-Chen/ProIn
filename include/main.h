@@ -8,18 +8,6 @@
 #endif
 
 
-// Clock
-#define HSI_VALUE	16000000
-#define HSE_VALUE	8000000
-
-#define PLL_M		8		// If HSI is used for PLL, PLL_M set to 16
-#define PLL_N		336
-#define PLL_P		2
-#define PLL_Q		7
-
-#define SYSTICK_RATE	2
-
-
 // Structure hoding the current time configuration
 struct __RCC_CLK__
 {
