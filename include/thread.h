@@ -16,7 +16,7 @@ typedef struct __TCB_T__
 
 	struct {
 		uint32_t prio : 4;
-		uint32_t slices : 8;
+		uint32_t time_slices : 16;
 		uint32_t runable : 4;
 	} status;
 
@@ -32,7 +32,7 @@ typedef struct __TCB_LIST_T__
 {
 	uint32_t num_of_thd;
 	uint32_t slices_sum;
-	tcb **head;
+	tcb *head;
 } tcb_list_t;
 
 int32_t thread_create(void *func, uint32_t *args, uint8_t prio);

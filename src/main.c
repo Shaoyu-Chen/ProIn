@@ -45,8 +45,8 @@ int main()
 	USART3_Init();
 	HEAP_Init();
 
-	if(thread_create(thread_1, NULL, 3) || thread_create(thread_2, NULL, 3) ||
-		thread_create(thread_3, NULL, 3) || thread_create(thread_4, NULL, 3))
+	if(thread_create(thread_1, NULL, 10) || thread_create(thread_2, NULL, 10) ||
+		thread_create(thread_3, NULL, 0) || thread_create(thread_4, NULL, 0))
 	{
 		print("Thread create failed.\n");
 		while(1);

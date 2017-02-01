@@ -69,7 +69,7 @@ void SVC_routine_c(uint32_t *stack_pointer)
 			__asm__ volatile("MSR   MSP, R2         \n\t");
 
 			// Initializes the sp of first thread to PSP and return to thread mode with PSP as sp
-			current_thd = *tcb_list.head;
+			current_thd = tcb_list.head;
 
 			__asm__ volatile("MOV   R2, %0          \n\t" :: "r" (current_thd->sp) : "r2");
 			__asm__ volatile("MSR   PSP, R2         \n\t");
@@ -118,25 +118,35 @@ void __attribute__((naked)) SVC_Handler()
 
 void __attribute__((naked)) PendSV_Handler()
 {
+	//
+	__asm__ volatile("MOV	R0, %0			\n\t" :: "r" (current_thd->status.time_slices): "r0");
+	__asm__ volatile("CMP	R0, #0			\n\t");
+	__asm__ volatile("IT	EQ			\n\t");
+	__asm__ volatile("BEQ	Context_Switch		\n\t");
+	__asm__ volatile("SUB	R0, R0, #1		\n\t");
+	__asm__ volatile("MOV	%0, R0			\n\t" : "=r" (current_thd->status.time_slices));
+	__asm__ volatile("BX	LR			\n\t");
+
+	__asm__ volatile("Context_Switch:		\n\t");
 	// Saves callee-saved registers
-	__asm__ volatile("MRS   R0, PSP		\n\t" ::: "r0");
-	__asm__ volatile("MOV	%0, R0		\n\t" : "=r" (current_thd->sp));
-	__asm__ volatile("MOV	R0, %0		\n\t" :: "r" (current_thd->r4_r11) : "r0");
-	__asm__ volatile("STM	R0, {R4-R11}	\n\t");
+	__asm__ volatile("	MRS   R0, PSP		\n\t" ::: "r0");
+	__asm__ volatile("	MOV	%0, R0		\n\t" : "=r" (current_thd->sp));
+	__asm__ volatile("	MOV	R0, %0		\n\t" :: "r" (current_thd->r4_r11) : "r0");
+	__asm__ volatile("	STM	R0, {R4-R11}	\n\t");
 
 	// Scheduler
-	__asm__ volatile("BL	scheduler	\n\t");
+	__asm__ volatile("	BL	scheduler	\n\t");
 
 	// Context recovered
-	__asm__ volatile("MOV	R0, %0		\n\t" :: "r" (current_thd->r4_r11) : "r0");
-	__asm__ volatile("LDM	R0, {R4-R11}	\n\t");
+	__asm__ volatile("	MOV	R0, %0		\n\t" :: "r" (current_thd->r4_r11) : "r0");
+	__asm__ volatile("	LDM	R0, {R4-R11}	\n\t");
 
-	__asm__ volatile("MOV   R2, %0          \n\t" :: "r" (current_thd->sp) : "r2");
-	__asm__ volatile("MSR   PSP, R2         \n\t");
+	__asm__ volatile("	MOV	R2, %0		\n\t" :: "r" (current_thd->sp) : "r2");
+	__asm__ volatile("	MSR	PSP, R2		\n\t");
 
 	// Return to Thread Mode with PSP as sp
-	__asm__ volatile("MOV   LR, #0xFFFFFFFD \n\t");
-	__asm__ volatile("BX	LR		\n\t");
+	__asm__ volatile("	MOV	LR, #0xFFFFFFFD	\n\t");
+	__asm__ volatile("	BX	LR		\n\t");
 }
 
 

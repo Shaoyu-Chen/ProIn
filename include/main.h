@@ -7,6 +7,7 @@
 #define NULL		((void *) 0)
 #endif
 
+#define TARGET_LATENCY	100
 
 // Structure hoding the current time configuration
 struct __RCC_CLK__

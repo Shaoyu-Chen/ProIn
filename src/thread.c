@@ -35,27 +35,17 @@ int32_t __thread_create(void *func, uint32_t *args, uint8_t prio)
 
 		if(prio >= PRIO_LEVEL)
 			prio = PRIO_LEVEL - 1;
+
 		newborn->status.prio = prio;
 		tcb_list.slices_sum += PRIO_LEVEL - prio;
-		newborn->status.slices = (PRIO_LEVEL - prio) * SYSTICK_RATE / tcb_list.slices_sum;
-
-
-		if(tcb_list.num_of_thd > 0)
-		{
-			tcb *probe = *tcb_list.head;
-
-			do{
-				if(newborn->status.prio <= probe->status.prio && newborn->status.slices > probe->status.slices)
-					newborn->status.slices = probe->status.slices;
-			
-				probe = probe->next;
-			} while(probe != *tcb_list.head);
-		}
+		newborn->status.time_slices = (PRIO_LEVEL - prio) * TARGET_LATENCY / tcb_list.slices_sum;
 
 		newborn->status.runable = 1;
 
 		newborn->sp = newborn->stack + THD_STK;
 		newborn->sp -= STK_FR_SIZE;
+
+		newborn->next = NULL;
 
 		// Context initialization
 		if(args)				// argc, argv
@@ -76,15 +66,23 @@ int32_t __thread_create(void *func, uint32_t *args, uint8_t prio)
 		// Inserts into tcb_list
 		tcb_list.num_of_thd += 1;
 
-		if(tcb_list.head)
-		{
-			newborn->next = *tcb_list.head;
-			*tcb_list.head = newborn;
-		}
+		if(!tcb_list.head)
+			tcb_list.head = newborn;
 		else
 		{
-			tcb_list.head = &newborn->next;
-                        *tcb_list.head = newborn;
+			tcb **probe = &tcb_list.head;
+
+			do
+			{
+				if((*probe)->status.prio >= newborn->status.prio)
+					break;
+
+				probe = &(*probe)->next;
+
+			} while(*probe);
+
+			newborn->next = *probe;
+			*probe = newborn;
 		}
 
 		return 0;
@@ -95,36 +93,22 @@ int32_t __thread_create(void *func, uint32_t *args, uint8_t prio)
 
 void scheduler()
 {
-	tcb *probe = *tcb_list.head;
-	uint8_t max_slices = 0;
-
-	// Searches for the thread with max slices
-	do
+	current_thd = current_thd->next;
+	
+	// Update time_slices
+	if(!current_thd)
 	{
-		if(probe->status.slices > max_slices)
-		{
-			max_slices = probe->status.slices;
-			current_thd = probe;
-		}
-		probe = probe->next;
+		tcb *probe = tcb_list.head;
 
-	} while(probe != *tcb_list.head);
-
-
-	// Update slices
-	if(!max_slices)
-	{
 		// If all threads reach 0 slices, RELOAD
 		do
 		{
-			probe->status.slices = (PRIO_LEVEL - probe->status.prio) * SYSTICK_RATE / tcb_list.slices_sum;
-			(probe->status.slices == 0) ? (probe->status.slices = 1) : 0;
-			
-			(probe->status.slices > max_slices) ? current_thd = probe : 0;
+			probe->status.time_slices = (PRIO_LEVEL - probe->status.prio) * TARGET_LATENCY / tcb_list.slices_sum;
+			(probe->status.time_slices == 0) ? (probe->status.time_slices = 1) : 0;
+
 			probe = probe->next;
+		} while(probe);
 
-		} while(probe != *tcb_list.head);
+		current_thd = tcb_list.head;
 	}
-
-	--current_thd->status.slices;
 }
