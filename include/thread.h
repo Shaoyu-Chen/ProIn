@@ -2,13 +2,7 @@
 #define __PROIN_THREAD__
 
 #include <stdint.h>
-
-#define MAX_THD_NUM	8
-#define STK_FR_SIZE	8
-#define THD_STK		128
-
-// Priority of thread: 0 ~ 7, the loewr the number, the higher the priority
-#define PRIO_LEVEL	8
+#include "Config.h"
 
 typedef struct __TCB_T__
 {

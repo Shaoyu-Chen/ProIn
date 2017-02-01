@@ -1,9 +1,9 @@
-#include "main.h"
+#include "Config.h"
 #include "core.h"
+#include "heap.h"
+#include "main.h"
 #include "peripheral.h"
 #include "thread.h"
-#include "lock.h"
-#include "heap.h"
 
 struct __RCC_CLK__ RCC_CLK;
 

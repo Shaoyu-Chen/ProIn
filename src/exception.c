@@ -1,3 +1,4 @@
+#include "Config.h"
 #include "core.h"
 #include "heap.h"
 #include "main.h"

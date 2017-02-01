@@ -7,10 +7,11 @@ TARGET = ProIn.bin
 
 .PHONY: all clean
 vpath %.c src
+vpath %.h include
 
 all: $(TARGET)
 
-$(TARGET): startup.c main.c core.c exception.c peripheral.c thread.c lock.c heap.c
+$(TARGET): Config.h startup.c main.c core.c exception.c peripheral.c thread.c lock.c heap.c
 	$(CC) $(CFLAGS) -o ProIn.elf $^
 	$(CROSS_COMPILE)objcopy -Obinary ProIn.elf $@
 
