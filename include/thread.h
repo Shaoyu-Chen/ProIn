@@ -4,7 +4,7 @@
 #include <stdint.h>
 #include "Config.h"
 
-#define	THD_BLOCK	0
+#define THD_BLOCK	0
 #define THD_READY	1
 
 typedef struct __TCB_T__
