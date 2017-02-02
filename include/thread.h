@@ -4,6 +4,9 @@
 #include <stdint.h>
 #include "Config.h"
 
+#define	THD_BLOCK	0
+#define THD_READY	1
+
 typedef struct __TCB_T__
 {
 	uint32_t tid;
@@ -11,12 +14,15 @@ typedef struct __TCB_T__
 	struct {
 		uint32_t prio : 4;
 		uint32_t time_slices : 16;
-		uint32_t runable : 4;
-	} status;
+		uint32_t state : 4;
+	} state;
 
-	uint32_t r4_r11[8];
+	// Context register
+	uint32_t CTRL;
+	uint32_t R4_R11[8];
+	uint32_t *SP;
+	uint32_t LR;
 
-	uint32_t *sp;
 	uint32_t stack[THD_STK];
 
 	struct __TCB_T__ *next;

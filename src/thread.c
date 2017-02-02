@@ -31,40 +31,45 @@ int32_t __thread_create(void *func, uint32_t *args, uint8_t prio)
 		if(!newborn) return -1;
 
 		
-		// TCB initialization
+		/* ********** TCB initialization ********** */
 		newborn->tid = tcb_list.num_of_thd + 1;
 
 		if(prio >= PRIO_LEVEL)
 			prio = PRIO_LEVEL - 1;
 
-		newborn->status.prio = prio;
+		newborn->state.prio = prio;
 		tcb_list.slices_sum += PRIO_LEVEL - prio;
-		newborn->status.time_slices = (PRIO_LEVEL - prio) * TARGET_LATENCY / tcb_list.slices_sum;
+		newborn->state.time_slices = (PRIO_LEVEL - prio) * TARGET_LATENCY / tcb_list.slices_sum;
 
-		newborn->status.runable = 1;
-
-		newborn->sp = newborn->stack + THD_STK;
-		newborn->sp -= STK_FR_SIZE;
+		newborn->state.state = THD_READY;
 
 		newborn->next = NULL;
 
-		// Context initialization
+
+		/* ********** Context initialization ********** */
+		newborn->CTRL = 0x03;			// PSP, unprivileged
+
+		newborn->SP = newborn->stack + THD_STK;
+		newborn->SP -= STK_FR_SIZE;
+
 		if(args)				// argc, argv
 		{
-			newborn->sp[R0] = args[0];
-			newborn->sp[R1] = args[1];
+			newborn->SP[R0] = args[0];
+			newborn->SP[R1] = args[1];
 		}
 		else
 		{
-			newborn->sp[R0] = 0;
-                        newborn->sp[R1] = 0;
+			newborn->SP[R0] = 0;
+                        newborn->SP[R1] = 0;
 		}
 
-		newborn->sp[PC] = (uint32_t) func;
-		newborn->sp[xPSR] = (1 << 24);		// Always in Thumb state
+		newborn->SP[PC] = (uint32_t) func;
+		newborn->SP[xPSR] = (1 << 24);		// Always in Thumb state
+
+		newborn->LR = 0xFFFFFFFD;
 
 
-		// Inserts into tcb_list
+		/* ********** Inserts tcb into tcb_list ********** */
 		tcb_list.num_of_thd += 1;
 
 		if(!tcb_list.head)
@@ -75,7 +80,7 @@ int32_t __thread_create(void *func, uint32_t *args, uint8_t prio)
 
 			do
 			{
-				if((*probe)->status.prio >= newborn->status.prio)
+				if((*probe)->state.prio >= newborn->state.prio)
 					break;
 
 				probe = &(*probe)->next;
@@ -94,7 +99,10 @@ int32_t __thread_create(void *func, uint32_t *args, uint8_t prio)
 
 void scheduler()
 {
-	current_thd = current_thd->next;
+	do
+	{
+		current_thd = current_thd->next;
+	} while (current_thd && current_thd->state.state == THD_BLOCK);
 	
 	// Update time_slices
 	if(!current_thd)
@@ -104,8 +112,8 @@ void scheduler()
 		// If all threads reach 0 slices, RELOAD
 		do
 		{
-			probe->status.time_slices = (PRIO_LEVEL - probe->status.prio) * TARGET_LATENCY / tcb_list.slices_sum;
-			(probe->status.time_slices == 0) ? (probe->status.time_slices = 1) : 0;
+			probe->state.time_slices = (PRIO_LEVEL - probe->state.prio) * TARGET_LATENCY / tcb_list.slices_sum;
+			(probe->state.time_slices == 0) ? (probe->state.time_slices = 1) : 0;
 
 			probe = probe->next;
 		} while(probe);
