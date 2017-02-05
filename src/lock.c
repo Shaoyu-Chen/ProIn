@@ -1,3 +1,4 @@
+#include "core.h"
 #include "lock.h"
 #include "main.h"
 #include "thread.h"
@@ -11,9 +12,9 @@ void spinlock_init(spinlock_t *lock)
 
 void spinlock_lock(spinlock_t *lock)
 {
-	__asm__ volatile("MOV	R0, #0	\n\t"
+	__asm__ volatile("MOV	R0, %2	\n\t"
 			 "MOV	R1, %0	\n\t"
-			 "SVC	3	\n\t" :: "r" (lock) : "r0", "r1");
+			 "SVC	%1	\n\t" :: "r" (lock), "I" (__LOCK), "I" (__SPINLOCK) : "r0", "r1");
 }
 
 void __spinlock_lock(spinlock_t *lock)

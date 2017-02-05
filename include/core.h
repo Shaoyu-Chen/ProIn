@@ -13,6 +13,7 @@
 #define SCB_BASE	0xE000ED00
 #define SCB_ICSR	(*((volatile uint32_t *) (SCB_BASE + 0x04)))
 #define SCB_AIRCR	(*((volatile uint32_t *) (SCB_BASE + 0x0C)))
+#define SCB_CCR		(*((volatile uint32_t *) (SCB_BASE + 0x14)))
 #define SCB_SHP		((volatile uint8_t *) (SCB_BASE + 0x18))
 
 // System Call #num

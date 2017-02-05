@@ -38,7 +38,7 @@ SECTIONS
 		_vma_ebss_ = .;
 	} > SRAM
 
-	. = ALIGN(4);
+	. = ALIGN(8);
 	_vma_heap_ = .;
 	_vma_eheap_ = _full_sp_;	
 }

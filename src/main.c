@@ -11,7 +11,6 @@ struct __RCC_CLK__ RCC_CLK;
 uint8_t AHB_prescaler[] = {0, 0, 0, 0, 0, 0, 0, 0, 1, 2, 3, 4, 6, 7, 8, 9};
 uint8_t APB_prescaler[] = {0, 0, 0, 0, 1, 2, 3, 4};
 
-uint32_t *test;
 void thread_1(uint32_t argc, void *argv)
 {
 	while(1)
@@ -54,8 +53,7 @@ int main()
 		while(1);
 	}
 
-
-	__asm__ volatile("svc 0	\n\t");
+	__asm__ volatile("SVC	%0	\n\t" :: "I" (__OS_INIT));
 
 	while(1);
 }
@@ -95,6 +93,9 @@ void SystemInit()
 	while((RCC_CFGR & (3 << 2)) != (2 << 2));       // SWS
 
 	SystemCoreClockUpdate();
+
+	// Stack aligment
+	SCB_CCR |= 1 << 9;
 }
 
 void SystemCoreClockUpdate()

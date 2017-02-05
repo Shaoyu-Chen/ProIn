@@ -14,7 +14,7 @@ typedef struct __HEAP_T__
 		uint32_t avail: 1;
 	} status;
 
-	uint32_t *space;
+	uint64_t *space;
 
 	struct __HEAP_T__ *prev;
 	struct __HEAP_T__ *next;
