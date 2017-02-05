@@ -205,7 +205,6 @@ void __attribute__((naked)) PendSV_Handler()
 	__asm__ volatile("	BX	LR		\n\t");
 }
 
-uint32_t MSPPP;
 void __attribute__((naked)) SysTick_Handler()
 {
 	isr_pro();
