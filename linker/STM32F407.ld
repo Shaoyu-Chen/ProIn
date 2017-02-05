@@ -24,6 +24,13 @@ SECTIONS
 		_vma_edata_ = .;
 	} > SRAM
 
+	.spinlock :
+	{
+		_vma_spinlock_ = .;
+		*(.spinlock)
+		_vma_espinlock_ = .;
+	} > SRAM
+
 	.bss (NOLOAD) :
 	{
 		_vma_bss_ = .;

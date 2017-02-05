@@ -14,10 +14,12 @@ int32_t thread_create(void *func, uint32_t *args, uint8_t prio)
 	// Places parameters in corresponding registers, and then makes a system call
 	__asm__ volatile("MOV	R0, %0	\n\t" :: "r" (func) : "r0");
 	__asm__ volatile("MOV	R1, %0	\n\t" :: "r" (args) : "r1");
-	__asm__ volatile("MOV   R2, %0  \n\t" :: "r" (prio) : "r1");
-	__asm__ volatile("svc	1	\n\t");
+	__asm__ volatile("MOV   R2, %0  \n\t" :: "r" (prio) : "r2");
+	__asm__ volatile("MOV   R3, #0  \n\t" ::: "r3");
 
-	__asm__ volatile("MOV	%0, R0	\n\t" : "=r" (result) :: "r0");
+	__asm__ volatile("SVC	1	\n\t");
+
+	__asm__ volatile("MOV	%0, R0	\n\t" : "=r" (result));
 
 	return result;
 }
@@ -33,6 +35,7 @@ int32_t __thread_create(void *func, uint32_t *args, uint8_t prio)
 		
 		/* ********** TCB initialization ********** */
 		newborn->tid = tcb_list.num_of_thd + 1;
+		newborn->state.nPriv = true;
 
 		if(prio >= PRIO_LEVEL)
 			prio = PRIO_LEVEL - 1;
@@ -47,8 +50,6 @@ int32_t __thread_create(void *func, uint32_t *args, uint8_t prio)
 
 
 		/* ********** Context initialization ********** */
-		newborn->CTRL = 0x03;			// PSP, unprivileged
-
 		newborn->SP = newborn->stack + THD_STK;
 		newborn->SP -= STK_FR_SIZE;
 

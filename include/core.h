@@ -15,6 +15,11 @@
 #define SCB_AIRCR	(*((volatile uint32_t *) (SCB_BASE + 0x0C)))
 #define SCB_SHP		((volatile uint8_t *) (SCB_BASE + 0x18))
 
+// System Call #num
+#define __OS_INIT	0
+#define __THD		1
+#define __MEM		2
+#define __LOCK		3
 
 enum stack_frame
 {

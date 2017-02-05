@@ -1,6 +1,7 @@
 #include "Config.h"
 #include "core.h"
 #include "heap.h"
+#include "lock.h"
 #include "main.h"
 #include "peripheral.h"
 #include "thread.h"
@@ -52,7 +53,8 @@ int main()
 		while(1);
 	}
 
-	__asm__ volatile("svc 0");
+
+	__asm__ volatile("svc 0	\n\t");
 
 	while(1);
 }

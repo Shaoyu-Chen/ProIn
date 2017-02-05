@@ -24,13 +24,6 @@
 #define PRIO_LOWEST	4 << 4
 
 
-// System Call #num
-#define OS_INIT		0
-#define THD_CREATE	1
-#define MEM_ALLOCATE	2
-#define MEM_FREE	3
-
-
 // Thread
 #define MAX_THD_NUM     8
 #define STK_FR_SIZE     8

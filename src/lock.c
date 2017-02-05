@@ -1,38 +1,58 @@
 #include "lock.h"
+#include "main.h"
 #include "thread.h"
 
 extern tcb *current_thd;
 
 void spinlock_init(spinlock_t *lock)
 {
-	lock->locked = 0;
-	lock->owner_id = 0;
+	lock->locked = false;
 }
 
 void spinlock_lock(spinlock_t *lock)
 {
-	__asm__ volatile("MOV	R0, #1			\n\t" ::: "r0");
-	__asm__ volatile("L1:				\n\t");
-	__asm__ volatile("	MOV	R1, %0		\n\t" :: "r" (&lock->locked) : "r1");
-	__asm__ volatile("	LDREX	R2, [R1]	\n\t" ::: "r2");
-	__asm__ volatile("	CMP	R2, #1		\n\t"
+	__asm__ volatile("MOV	R0, %0	\n\t"
+			 "MOV	R1, #0	\n\t"
+			 "SVC	3	\n\t" :: "r" (lock) : "r0");
+}
+
+void __spinlock_lock(spinlock_t *lock)
+{
+	__asm__ volatile("MOV	R0, #1			\n\t"
+			 "L1:				\n\t"
+			 "	MOV	R1, %0		\n\t"
+			 "	LDREX	R2, [R1]	\n\t"
+			 "	CMP	R2, #1		\n\t"
 			 "	BEQ	L1		\n\t"
+			 "	CPSID	I		\n\t"
 			 "	STREX	R2, R0, [R1]	\n\t"
 			 "	CMP	R2, R0		\n\t"
-			 "	BEQ	L1		\n\t"
-			 "	DMB			\n\t");
+			 "	BEQ	L2		\n\t"
+			 "	DMB			\n\t"
+			 "	B	L3		\n\t" :: "r" (&lock->locked) : "r0", "r1", "r2");
 
-	// Spinlock only released by the owner
-	lock->owner_id = current_thd->tid;
+	__asm__ volatile("L2:				\n\t"
+			 "	CPSIE	I		\n\t"
+			 "	B	L1		\n\t");
+
+	
+	// Thread promoted to privileged access
+	__asm__ volatile("L3:				\n\t"
+			 "	MRS	R0, CONTROL	\n\t"
+			 "	BIC	R0, R0, #1	\n\t"
+			 "	MSR	CONTROL, R0	\n\t" ::: "r0");
+
+	current_thd->state.nPriv = false;
 }
 
-int8_t spinlock_unlock(spinlock_t *lock)
+void __spinlock_unlock(spinlock_t *lock)
 {
-	if(current_thd->tid == lock->owner_id)
-	{
-		lock->locked = 0;
-		return 0;
-	}
-	else
-		return -1;
+	lock->locked = 0;
+	current_thd->state.nPriv = true;
+
+	__asm__ volatile("CPSIE	I		\n\t");
+	__asm__ volatile("MOV	R0, #3		\n\t" ::: "r0");
+	__asm__ volatile("MSR	CONTROL, R0	\n\t");
 }
+
+void spinlock_unlock(spinlock_t *lock) __attribute__ ((alias ("__spinlock_unlock")));

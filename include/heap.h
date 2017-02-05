@@ -3,6 +3,9 @@
 
 #include "stdint.h"
 
+#define __MEM_ALLOCATE	0
+#define __MEM_FREE	1
+
 typedef struct __HEAP_T__
 {
 	struct

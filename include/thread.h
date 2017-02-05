@@ -4,6 +4,8 @@
 #include <stdint.h>
 #include "Config.h"
 
+#define __THD_CREATE	0
+
 #define THD_BLOCK	0
 #define THD_READY	1
 
@@ -12,13 +14,13 @@ typedef struct __TCB_T__
 	uint32_t tid;
 
 	struct {
+		uint32_t nPriv : 1;
 		uint32_t prio : 4;
 		uint32_t time_slices : 16;
 		uint32_t state : 4;
 	} state;
 
 	// Context register
-	uint32_t CTRL;
 	uint32_t R4_R11[8];
 	uint32_t *SP;
 	uint32_t LR;
