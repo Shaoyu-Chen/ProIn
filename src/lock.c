@@ -11,9 +11,9 @@ void spinlock_init(spinlock_t *lock)
 
 void spinlock_lock(spinlock_t *lock)
 {
-	__asm__ volatile("MOV	R0, %0	\n\t"
-			 "MOV	R1, #0	\n\t"
-			 "SVC	3	\n\t" :: "r" (lock) : "r0");
+	__asm__ volatile("MOV	R0, #0	\n\t"
+			 "MOV	R1, %0	\n\t"
+			 "SVC	3	\n\t" :: "r" (lock) : "r0", "r1");
 }
 
 void __spinlock_lock(spinlock_t *lock)
@@ -29,18 +29,17 @@ void __spinlock_lock(spinlock_t *lock)
 			 "	CMP	R2, R0		\n\t"
 			 "	BEQ	L2		\n\t"
 			 "	DMB			\n\t"
-			 "	B	L3		\n\t" :: "r" (&lock->locked) : "r0", "r1", "r2");
+			 "	B	L3		\n\t"
 
-	__asm__ volatile("L2:				\n\t"
+			 "L2:				\n\t"
 			 "	CPSIE	I		\n\t"
-			 "	B	L1		\n\t");
+			 "	B	L1		\n\t"
 
-	
-	// Thread promoted to privileged access
-	__asm__ volatile("L3:				\n\t"
+			 // Thread promoted to privileged access
+			 "L3:				\n\t"
 			 "	MRS	R0, CONTROL	\n\t"
 			 "	BIC	R0, R0, #1	\n\t"
-			 "	MSR	CONTROL, R0	\n\t" ::: "r0");
+			 "	MSR	CONTROL, R0	\n\t"  :: "r" (&lock->locked) : "r0", "r1", "r2");
 
 	current_thd->state.nPriv = false;
 }
@@ -50,9 +49,9 @@ void __spinlock_unlock(spinlock_t *lock)
 	lock->locked = 0;
 	current_thd->state.nPriv = true;
 
-	__asm__ volatile("CPSIE	I		\n\t");
-	__asm__ volatile("MOV	R0, #3		\n\t" ::: "r0");
-	__asm__ volatile("MSR	CONTROL, R0	\n\t");
+	__asm__ volatile("CPSIE	I		\n\t"
+			 "MOV	R0, #3		\n\t"
+			 "MSR	CONTROL, R0	\n\t" ::: "r0");
 }
 
 void spinlock_unlock(spinlock_t *lock) __attribute__ ((alias ("__spinlock_unlock")));

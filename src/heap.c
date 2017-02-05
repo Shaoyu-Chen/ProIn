@@ -22,12 +22,10 @@ void *malloc(uint32_t size)
 	void *result;
 
 	// Places parameters in corresponding registers, and then makes a system call
-	__asm__ volatile("MOV	R0, %0	\n\t"
-			 "MOV	R1, #0	\n\t" :: "r" (size) : "r0", "r1");
-
-	__asm__ volatile("svc	2	\n\t");
-
-        __asm__ volatile("MOV	%0, R0	\n\t" : "=r" (result));
+	__asm__ volatile("MOV	R0, #0	\n\t"
+			 "MOV	R1, %0	\n\t"
+			 "SVC	2	\n\t"
+        		 "MOV	%0, R0	\n\t" : "=r" (result) : "r" (size) : "r0", "r1");
 
         return result;
 }
@@ -83,10 +81,9 @@ void *__malloc(uint32_t size)
 void __free(void *addr)
 {
 	// Places parameters in corresponding registers, and then makes a system call
-	__asm__ volatile("MOV	R0, %0	\n\t"
-			 "MOV   R1, #1  \n\t" :: "r" (addr) : "r0");
-
-	__asm__ volatile("svc	2	\n\t");
+	__asm__ volatile("MOV	R0, #1	\n\t"
+			 "MOV   R1, %0  \n\t"
+			 "SVC	2	\n\t" :: "r" (addr) : "r0", "r1");
 }
 
 void free(void *addr)

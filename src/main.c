@@ -11,6 +11,7 @@ struct __RCC_CLK__ RCC_CLK;
 uint8_t AHB_prescaler[] = {0, 0, 0, 0, 0, 0, 0, 0, 1, 2, 3, 4, 6, 7, 8, 9};
 uint8_t APB_prescaler[] = {0, 0, 0, 0, 1, 2, 3, 4};
 
+uint32_t *test;
 void thread_1(uint32_t argc, void *argv)
 {
 	while(1)

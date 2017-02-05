@@ -17,11 +17,12 @@
 extern uint32_t _lma_etext_;
 extern uint32_t _vma_data_;
 extern uint32_t _vma_edata_;
-extern spinlock_t _vma_spinlock_;
-extern spinlock_t _vma_espinlock_;
 extern uint32_t _vma_bss_;
 extern uint32_t _vma_ebss_;
 extern uint32_t _empty_sp_;
+
+extern spinlock_t _vma_spinlock_;
+extern spinlock_t _vma_espinlock_;
 
 extern tcb *current_thd;
 extern tcb_list_t tcb_list;
@@ -97,11 +98,11 @@ void SVC_routine_c(uint32_t *stack_pointer)
 		}
 		case __THD:
 		{
-			switch(stack_pointer[R3])
+			switch(stack_pointer[R0])
 			{
 			case __THD_CREATE:
-				stack_pointer[R0] = __thread_create((void *)stack_pointer[R0], 
-							(uint32_t *)stack_pointer[R1], (uint8_t)stack_pointer[R2]);
+				stack_pointer[R0] = __thread_create((void *)stack_pointer[R1], 
+							(uint32_t *)stack_pointer[R2], (uint8_t)stack_pointer[R3]);
 				break;
 			default:
 				print("Invalid param.\r\n");
@@ -111,13 +112,13 @@ void SVC_routine_c(uint32_t *stack_pointer)
 		}
 		case __MEM:
 		{
-			switch(stack_pointer[R1])
+			switch(stack_pointer[R0])
 			{
 			case __MEM_ALLOCATE:
-				stack_pointer[R0] = (uint32_t)__malloc((uint32_t)stack_pointer[R0]);
+				stack_pointer[R0] = (uint32_t)__malloc((uint32_t)stack_pointer[R1]);
 				break;
 			case __MEM_FREE:
-				__free((void *)stack_pointer[R0]);
+				__free((void *)stack_pointer[R1]);
 				break;
 			default:
 				print("Invalid param.\r\n");
@@ -127,10 +128,10 @@ void SVC_routine_c(uint32_t *stack_pointer)
 		}
 		case __LOCK:
 		{
-			switch(stack_pointer[R1])
+			switch(stack_pointer[R0])
 			{
 			case __SPINLOCK:
-				__spinlock_lock((spinlock_t *)stack_pointer[R0]);
+				__spinlock_lock((spinlock_t *)stack_pointer[R1]);
 				break;
 			default:
 				print("Invalid param.\r\n");
@@ -167,22 +168,23 @@ void __attribute__((naked)) PendSV_Handler()
 	__asm__ volatile("MOV	R0, %0			\n\t"
 			 "CMP	R0, #0			\n\t"
 			 "IT	EQ			\n\t"
-			 "BEQ	Context_Switch		\n\t"
+			 "BEQ	CONTEXT_SWITCH		\n\t"
 			 "SUB	R0, R0, #1		\n\t"
 			 "MOV	%0, R0			\n\t" : "+r" (current_thd->state.time_slices) :: "r0");
+
+	// NOTE: BX cannot be included in the asm block above
+	//       cuz compiler needs to inserts some instructions to complete the work
 	__asm__ volatile("BX	LR			\n\t");
 
-	__asm__ volatile("Context_Switch:		\n\t");
+
+	__asm__ volatile("CONTEXT_SWITCH:		\n\t");
 	// Context stored
 	__asm__ volatile("	MRS	R0, CONTROL	\n\t"
 			 "	AND	%0, R0, #1	\n\t" : "=r" (current_thd->state.nPriv) :: "r0");
-
 	__asm__ volatile("	MOV	R1, %0		\n\t"
         		 "	STM	R1, {R4-R11}	\n\t" :: "r" (current_thd->R4_R11) : "r1");
-
 	__asm__ volatile("	MRS	R2, PSP		\n\t"
 			 "	MOV	%0, R2		\n\t" : "=r" (current_thd->SP) :: "r2");
-
 	__asm__ volatile("	MOV	%0, LR		\n\t" : "=r" (current_thd->LR));
 
 	// Scheduler
@@ -192,13 +194,10 @@ void __attribute__((naked)) PendSV_Handler()
 	__asm__	volatile("	MRS	R0, CONTROL	\n\t"
 			 "	ORR	R0, R0, %0	\n\t"
 			 "	MSR	CONTROL, R0	\n\t" :: "r" (current_thd->state.nPriv) : "r0");
-
 	__asm__ volatile("	MOV	R1, %0		\n\t"
 			 "	LDM	R1, {R4-R11}	\n\t" :: "r" (current_thd->R4_R11) : "r1");
-
 	__asm__ volatile("	MOV	R2, %0		\n\t"
 			 "	MSR	PSP, R2		\n\t" :: "r" (current_thd->SP) : "r2");
-
 	__asm__ volatile("	MOV	LR, %0		\n\t" :: "r" (current_thd->LR));
 
 
@@ -212,7 +211,6 @@ void __attribute__((naked)) SysTick_Handler()
 	isr_pro();
 
 	// PENDSVSET
-	LED_off(LED4);
 	SCB_ICSR |= 1 << 28;
 
 	isr_epi();

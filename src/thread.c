@@ -12,14 +12,13 @@ int32_t thread_create(void *func, uint32_t *args, uint8_t prio)
 	int result;
 
 	// Places parameters in corresponding registers, and then makes a system call
-	__asm__ volatile("MOV	R0, %0	\n\t" :: "r" (func) : "r0");
-	__asm__ volatile("MOV	R1, %0	\n\t" :: "r" (args) : "r1");
-	__asm__ volatile("MOV   R2, %0  \n\t" :: "r" (prio) : "r2");
-	__asm__ volatile("MOV   R3, #0  \n\t" ::: "r3");
-
-	__asm__ volatile("SVC	1	\n\t");
-
-	__asm__ volatile("MOV	%0, R0	\n\t" : "=r" (result));
+	__asm__ volatile("MOV   R0, #0  \n\t"
+			 "MOV	R1, %1	\n\t"
+			 "MOV	R2, %2	\n\t"
+			 "MOV   R3, %3  \n\t"
+			 "SVC	1	\n\t"
+			 "MOV	%0, R0	\n\t"
+	: "=r" (result) : "r" (func), "r" (args), "r" (prio) : "r0", "r1", "r2", "r3");
 
 	return result;
 }
